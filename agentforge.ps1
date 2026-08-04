@@ -52,8 +52,16 @@ $GitCommand = Get-Command git -ErrorAction SilentlyContinue
 $InsideGit = $false
 if ($GitCommand) {
     $GitProbePath = if (Test-Path -LiteralPath $TargetPath -PathType Container) { $TargetPath } else { $TargetParent }
-    & git -C $GitProbePath rev-parse --is-inside-work-tree *> $null
-    $InsideGit = ($LASTEXITCODE -eq 0)
+    $PreviousErrorActionPreference = $ErrorActionPreference
+    try {
+        # Windows PowerShell 5.1 can promote native stderr to a terminating
+        # NativeCommandError when the probe is expected to report "not a repo".
+        $ErrorActionPreference = "Continue"
+        & git -C $GitProbePath rev-parse --is-inside-work-tree *> $null
+        $InsideGit = ($LASTEXITCODE -eq 0)
+    } finally {
+        $ErrorActionPreference = $PreviousErrorActionPreference
+    }
 }
 
 if ($InsideGit) {
