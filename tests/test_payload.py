@@ -14,6 +14,18 @@ def require(condition: bool, message: str) -> None:
         raise AssertionError(message)
 
 
+def require_local_links(markdown: Path) -> None:
+    text = markdown.read_text()
+    for target in re.findall(r"\[[^\]]+\]\(([^)]+)\)", text):
+        if target.startswith(("http://", "https://", "mailto:", "#")):
+            continue
+        path_text = target.split("#", 1)[0]
+        if not path_text:
+            continue
+        linked_path = (markdown.parent / path_text).resolve()
+        require(linked_path.exists(), f"broken local link in {markdown.relative_to(ROOT)}: {target}")
+
+
 def main() -> None:
     manifest = PAYLOAD / "harness" / "manifest.tsv"
     entries: list[tuple[str, str]] = []
@@ -102,6 +114,45 @@ def main() -> None:
     require('Fetch-Payload "harness/manifest.tsv"' in powershell, "PowerShell launcher does not consume the shared Harness manifest")
     require(len(re.findall(r"prompt_line \"", shell)) == 4, "POSIX launcher must expose exactly four question sites")
     require("Read-Host" in powershell, "PowerShell launcher has no interactive prompts")
+
+    readme = (ROOT / "README.md").read_text()
+    for phrase in (
+        "agentForge 用来做什么",
+        "使用步骤",
+        "最多四类配置",
+        "生成后你会得到什么",
+        "AI 会朝什么方向工作",
+        "渐进式质量门禁",
+        "docs/usage.md",
+        "docs/implementation.md",
+        "docs/development.md",
+        "MIT License",
+    ):
+        require(phrase in readme, f"user-facing README missing {phrase}")
+    require("/v0.3.0/agentforge.sh" in readme, "README POSIX launcher version mismatch")
+    require("/v0.3.0/agentforge.ps1" in readme, "README PowerShell launcher version mismatch")
+    for prompt in (
+        "Primary AI guide [1=AGENTS.md, 2=CLAUDE.md]",
+        "Generate the progressive Harness documentation scaffold? [Y/n]",
+        "Install orchestrate-parallel-work for Codex and Claude Code? [Y/n]",
+        "Initialize a local Git repository? [Y/n]",
+    ):
+        require(prompt in readme, f"README does not explain interactive prompt: {prompt}")
+    for powershell_safety in ("[Guid]::NewGuid()", "-UseBasicParsing", "-ExecutionPolicy Bypass", "finally"):
+        require(powershell_safety in readme, f"README PowerShell command missing {powershell_safety}")
+    require((ROOT / "LICENSE").read_text().startswith("MIT License"), "root LICENSE is not MIT")
+    require("不会为生成的目标项目自动选择或添加许可证" in readme, "README must distinguish the project license from generated projects")
+
+    supporting_docs = (
+        ROOT / "README.md",
+        ROOT / "docs" / "README.md",
+        ROOT / "docs" / "usage.md",
+        ROOT / "docs" / "implementation.md",
+        ROOT / "docs" / "development.md",
+    )
+    for document in supporting_docs:
+        require(document.is_file(), f"missing documentation file: {document.relative_to(ROOT)}")
+        require_local_links(document)
 
     print(f"payload contract passed ({len(entries)} Harness files)")
 
