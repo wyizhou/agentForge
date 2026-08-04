@@ -49,8 +49,11 @@ try {
     $DanglingTarget = Join-Path $TempDir "dangling-conflict"
     New-Item -ItemType Directory -Path $DanglingTarget -Force | Out-Null
     $DanglingGuide = Join-Path $DanglingTarget "AGENTS.md"
+    $MissingGuide = Join-Path $TempDir "missing-guide"
     try {
-        New-Item -ItemType SymbolicLink -Path $DanglingGuide -Target (Join-Path $TempDir "missing-guide") -ErrorAction Stop | Out-Null
+        [IO.File]::WriteAllText($MissingGuide, "temporary target`n")
+        New-Item -ItemType SymbolicLink -Path $DanglingGuide -Target $MissingGuide -ErrorAction Stop | Out-Null
+        Remove-Item -LiteralPath $MissingGuide -Force
         & (Join-Path $RepoDir "agentforge.ps1") -SourceDir $RepoDir -Target $DanglingTarget -Primary agents -Harness no -Skill no -Git no
         if ($LASTEXITCODE -eq 0) { throw "Dangling-link conflict unexpectedly succeeded" }
         if (-not (Get-Item -LiteralPath $DanglingGuide -Force -ErrorAction SilentlyContinue)) { throw "Dangling link was modified" }
