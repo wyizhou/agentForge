@@ -25,7 +25,7 @@ documentation only. Target projects must not receive agentForge-owned
 - [x] Update payload, launchers, repository architecture, and documentation.
 - [x] Update POSIX, PowerShell, and payload contract tests.
 - [x] Run local and cross-platform verification.
-- [ ] Publish the completed version.
+- [x] Publish the completed version.
 
 ## Acceptance evidence
 
@@ -41,12 +41,16 @@ documentation only. Target projects must not receive agentForge-owned
 - A real Codex run from an empty generated project added a POSIX command,
   focused tests, syntax linting, and project-native command documentation. All
   documented checks passed, and no verifier wrapper was created.
+- Main CI run `30884790237` passed on Linux and Windows. Tag CI run
+  `30884864221` additionally passed both public Raw launcher checks.
+- Release `v0.3.0` was published at
+  <https://github.com/wyizhou/agentForge/releases/tag/v0.3.0>.
 
 ## Risks
 
 - Documentation-only enforcement cannot itself guarantee that an agent follows
-  the contract; the generated guide must make the delivery requirements
-  explicit and require concrete command evidence in completion reports.
+  the contract; the generated guide makes the delivery requirements explicit
+  and requires concrete command evidence in completion reports.
 - Existing v0.2 projects are not mutated automatically. The README documents a
   safe manual migration that preserves custom checks before old wrappers are
   removed.
