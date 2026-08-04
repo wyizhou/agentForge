@@ -1,0 +1,7 @@
+SKILL.md
+LICENSE
+agents/openai.yaml
+references/runtime-generic.md
+references/runtime-codex.md
+references/runtime-claude-code.md
+references/validation.md
