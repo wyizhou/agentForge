@@ -6,7 +6,7 @@ agentForge 可以生成：
 
 - 以 `AGENTS.md` 或 `CLAUDE.md` 为主入口的项目级 AI 指令；
 - 面向不同 AI 工具的兼容入口；
-- 参考 OpenAI Harness Engineering 思路设计的渐进式 Harness；
+- 参考 OpenAI Harness Engineering 思路设计的渐进式 Harness 文档脚手架；
 - 要求测试、linter 与项目同步演进的强制交付规范；
 - 项目级 `SKILLS.md` 与可选的 `orchestrate-parallel-work` Skill；
 - 必要的架构、产品、执行计划、质量、安全和可靠性文档目录。
@@ -29,7 +29,7 @@ agentForge 可以生成：
 
 ```sh
 agentforge_tmp=$(mktemp) && \
-  curl -fsSL https://raw.githubusercontent.com/wyizhou/agentForge/v0.2.0/agentforge.sh -o "$agentforge_tmp" && \
+  curl -fsSL https://raw.githubusercontent.com/wyizhou/agentForge/v0.3.0/agentforge.sh -o "$agentforge_tmp" && \
   sh "$agentforge_tmp"; agentforge_status=$?; rm -f "$agentforge_tmp"; (exit "$agentforge_status")
 ```
 
@@ -37,7 +37,7 @@ agentforge_tmp=$(mktemp) && \
 
 ```sh
 agentforge_tmp=$(mktemp) && \
-  wget -q https://raw.githubusercontent.com/wyizhou/agentForge/v0.2.0/agentforge.sh -O "$agentforge_tmp" && \
+  wget -q https://raw.githubusercontent.com/wyizhou/agentForge/v0.3.0/agentforge.sh -O "$agentforge_tmp" && \
   sh "$agentforge_tmp"; agentforge_status=$?; rm -f "$agentforge_tmp"; (exit "$agentforge_status")
 ```
 
@@ -45,7 +45,7 @@ agentforge_tmp=$(mktemp) && \
 
 ```powershell
 $AgentForge = Join-Path ([IO.Path]::GetTempPath()) "agentforge.ps1"
-Invoke-WebRequest https://raw.githubusercontent.com/wyizhou/agentForge/v0.2.0/agentforge.ps1 -OutFile $AgentForge
+Invoke-WebRequest https://raw.githubusercontent.com/wyizhou/agentForge/v0.3.0/agentforge.ps1 -OutFile $AgentForge
 & $AgentForge
 $AgentForgeStatus = $LASTEXITCODE
 Remove-Item $AgentForge -Force
@@ -77,9 +77,10 @@ docs/
 ├── exec-plans/
 ├── quality/
 └── harness/
-harness/
-├── verify.sh
-└── verify.ps1
+    ├── README.md
+    ├── DELIVERY_RULES.md
+    ├── COMMANDS.md
+    └── CHECKS.md
 ```
 
 生成完成后即可直接开始开发，不需要复制额外提示词，也不需要执行二次 Bootstrap。主要 AI 指令会要求编程代理完整读取：
@@ -92,7 +93,9 @@ Harness 会与项目逐步演进：空目录只包含稳定的交付规范；首
 
 这种设计不会为空项目猜测技术栈，也不会要求一次性搭建与当前阶段无关的工具。同时，新增功能必须带有对应测试，修复缺陷必须带有回归测试，AI 不能通过删除测试、降低规则或跳过失败来宣布任务完成。
 
-初始验证脚本会检查 Harness 文档结构，并明确提示尚未注册项目级检查。空项目可以正常通过；一旦检测到源码或技术栈清单，而 AI 尚未接入项目级检查，验证就会失败。AI 必须在引入实际代码和工具时同步扩展验证脚本、`COMMANDS.md` 与 `CHECKS.md`。如果 agentForge 被用于已有源码的项目，则应在下一次代码交付前完成这项接入。
+agentForge 不会向目标项目生成统一验证脚本，也不会要求二次执行命令。`AGENTS.md` 或 `CLAUDE.md` 会引用 Harness 文档并要求 AI 在每次交付前直接运行项目原生的测试、linter、类型检查和构建命令。AI 在工具随项目落地时同步更新 `COMMANDS.md` 与 `CHECKS.md`；如果 agentForge 被用于已有源码的项目，则应在下一次代码交付前补齐适用的测试和 linter。
+
+升级提示：agentForge 不会自动迁移既有项目。由 v0.2 生成的 `harness/verify.sh` 和 `harness/verify.ps1` 会原样保留。如果其中已经接入项目检查，请先把真实命令整理到 `COMMANDS.md`、把对应约束整理到 `CHECKS.md`，并修改 `AGENTS.md`、`CLAUDE.md` 及 Harness 文档，要求 AI 直接运行这些命令；确认没有遗留自定义逻辑后，再删除两个旧脚本及其引用。
 
 ## 项目级 Skill
 
@@ -137,15 +140,15 @@ PowerShell：
 
 ## 现有文件与重复执行
 
-agentForge 0.2 不会覆盖任何已经存在的目标路径。
+agentForge 0.3 不会覆盖任何已经存在的目标路径。
 
 生成器会先下载并暂存本次选择所需的全部文件，然后统一检查目标路径、父目录、符号链接和 Windows 重解析点。发现冲突时会在写入项目前停止，并列出冲突路径。
 
 如果目标目录已经位于 Git 工作区内，agentForge 会保留现有仓库并跳过 `git init`，避免创建嵌套仓库。
 
-## 开发与验证
+## 开发 agentForge 与验证
 
-克隆仓库后，可以运行：
+以下命令仅用于验证 agentForge 源码仓库本身，不会被生成到目标项目。克隆仓库后，可以运行：
 
 ```sh
 ./harness/verify.sh
@@ -161,7 +164,7 @@ powershell -ExecutionPolicy Bypass -File .\harness\verify.ps1
 
 - Payload 完整性；
 - POSIX 与 PowerShell 生成流程；
-- 空项目的渐进式 Harness 行为与强制交付规范；
+- 只生成 Harness 文档、不生成统一验证脚本的输出契约；
 - 空格及特殊目录名；
 - 文件、父目录和符号链接冲突；
 - Git 初始化与现有工作区识别；

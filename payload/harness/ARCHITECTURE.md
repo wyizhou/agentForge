@@ -18,7 +18,7 @@ No modules have been introduced yet.
 
 ## Enforced invariants
 
-List architectural constraints and identify the automated check that enforces
-each one.
+List architectural constraints and identify the project-native command or
+review procedure that enforces each one.
 
 No project-specific invariants have been recorded yet.

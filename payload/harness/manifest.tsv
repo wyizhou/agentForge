@@ -17,5 +17,3 @@ docs/harness/README.md	docs/harness/README.md
 docs/harness/DELIVERY_RULES.md	docs/harness/DELIVERY_RULES.md
 docs/harness/COMMANDS.md	docs/harness/COMMANDS.md
 docs/harness/CHECKS.md	docs/harness/CHECKS.md
-harness/verify.sh	harness/verify.sh
-harness/verify.ps1	harness/verify.ps1

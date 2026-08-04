@@ -22,65 +22,76 @@ try {
         "CLAUDE.md",
         "AGENTS.md",
         "ARCHITECTURE.md",
+        "docs/README.md",
+        "docs/harness/README.md",
         "docs/harness/DELIVERY_RULES.md",
-        "harness/verify.ps1",
+        "docs/harness/COMMANDS.md",
+        "docs/harness/CHECKS.md",
         ".agents/skills/orchestrate-parallel-work/SKILL.md",
         ".claude/skills/orchestrate-parallel-work/SKILL.md"
     )) {
         if (-not (Test-Path -LiteralPath (Join-Path $Target $Path) -PathType Leaf)) { throw "Missing generated file: $Path" }
     }
 
-    if (Test-Path -LiteralPath (Join-Path $Target "harness/STATUS")) { throw "Legacy Harness status was generated" }
+    if (Test-Path -LiteralPath (Join-Path $Target "harness")) { throw "Harness runtime scripts were generated" }
     if (Test-Path -LiteralPath (Join-Path $Target "docs/harness/BOOTSTRAP_PROMPT.md")) { throw "Legacy bootstrap prompt was generated" }
-    & (Join-Path $Target "harness/verify.ps1")
-    if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) { throw "Empty-project Harness verification failed" }
-    if ((Get-Content -LiteralPath (Join-Path $Target "harness/verify.ps1") -Raw) -notmatch "No project-specific checks are registered yet") {
-        throw "Generated verifier lacks progressive empty-project notice"
+    $ClaudeGuide = Get-Content -LiteralPath (Join-Path $Target "CLAUDE.md") -Raw
+    foreach ($Phrase in @(
+        "docs/harness/DELIVERY_RULES.md",
+        "docs/harness/COMMANDS.md",
+        "docs/harness/CHECKS.md",
+        "test runner and linter",
+        "project-native"
+    )) {
+        if ($ClaudeGuide -notmatch [regex]::Escape($Phrase)) { throw "CLAUDE.md lacks Harness instruction: $Phrase" }
     }
-
-    $ProjectNotes = Join-Path $Target "PROJECT_NOTES.md"
-    [IO.File]::WriteAllText($ProjectNotes, "# Project notes`n")
-    & (Join-Path $Target "harness/verify.ps1")
-    if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) { throw "Documentation-only project incorrectly required code checks" }
-    Remove-Item -LiteralPath $ProjectNotes -Force
-
-    $UnregisteredCode = Join-Path $Target "app.py"
-    [IO.File]::WriteAllText($UnregisteredCode, "print('project code')`n")
-    & (Join-Path $Target "harness/verify.ps1")
-    if ($LASTEXITCODE -eq 0) { throw "Harness passed after code was added without project checks" }
-    Remove-Item -LiteralPath $UnregisteredCode -Force
-
-    $UppercaseCode = Join-Path $Target "APP.PY"
-    [IO.File]::WriteAllText($UppercaseCode, "print('uppercase extension')`n")
-    & (Join-Path $Target "harness/verify.ps1")
-    if ($LASTEXITCODE -eq 0) { throw "Harness missed an uppercase source extension" }
-    Remove-Item -LiteralPath $UppercaseCode -Force
-
-    $DocsCode = Join-Path $Target "docs/site/index.html"
-    New-Item -ItemType Directory -Path (Split-Path -Parent $DocsCode) -Force | Out-Null
-    [IO.File]::WriteAllText($DocsCode, "<!doctype html>`n")
-    & (Join-Path $Target "harness/verify.ps1")
-    if ($LASTEXITCODE -eq 0) { throw "Harness missed project code under docs" }
-    Remove-Item -LiteralPath $DocsCode -Force
-
-    $UnlistedLanguage = Join-Path $Target "main.pl"
-    [IO.File]::WriteAllText($UnlistedLanguage, "print 'project code';`n")
-    & (Join-Path $Target "harness/verify.ps1")
-    if ($LASTEXITCODE -eq 0) { throw "Harness missed an unlisted programming language" }
-    Remove-Item -LiteralPath $UnlistedLanguage -Force
-
-    $ExtensionlessCode = Join-Path $Target "tool"
-    [IO.File]::WriteAllText($ExtensionlessCode, "#!/bin/sh`n")
-    & (Join-Path $Target "harness/verify.ps1")
-    if ($LASTEXITCODE -eq 0) { throw "Harness missed an extensionless source file" }
-    Remove-Item -LiteralPath $ExtensionlessCode -Force
-
-    & (Join-Path $Target "harness/verify.ps1")
-    if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) { throw "Harness did not recover after unregistered code was removed" }
+    $AgentsBridge = Get-Content -LiteralPath (Join-Path $Target "AGENTS.md") -Raw
+    foreach ($Path in @(
+        "docs/harness/DELIVERY_RULES.md",
+        "docs/harness/COMMANDS.md",
+        "docs/harness/CHECKS.md"
+    )) {
+        if ($AgentsBridge -notmatch [regex]::Escape($Path)) { throw "AGENTS.md compatibility guide lacks Harness path: $Path" }
+    }
+    $DeliveryRules = Get-Content -LiteralPath (Join-Path $Target "docs/harness/DELIVERY_RULES.md") -Raw
+    foreach ($Phrase in @("Every new or changed behavior", "regression test", "test runner and linter", "Before delivery", "does not generate or require a unified")) {
+        if ($DeliveryRules -notmatch [regex]::Escape($Phrase)) { throw "Delivery rules lack required contract: $Phrase" }
+    }
 
     $CodexSkill = Get-Content -LiteralPath (Join-Path $Target ".agents/skills/orchestrate-parallel-work/SKILL.md") -Raw
     $ClaudeSkill = Get-Content -LiteralPath (Join-Path $Target ".claude/skills/orchestrate-parallel-work/SKILL.md") -Raw
     if ($CodexSkill -ne $ClaudeSkill) { throw "Generated Skill copies differ" }
+
+    $IsWindowsHost = [Environment]::OSVersion.Platform -eq [PlatformID]::Win32NT
+    $ShCommand = Get-Command sh -ErrorAction SilentlyContinue
+    if (-not $IsWindowsHost -and $ShCommand) {
+        $PowerShellParityRoot = Join-Path $TempDir "powershell-parity"
+        $PosixParityRoot = Join-Path $TempDir "posix-parity"
+        $PowerShellParityTarget = Join-Path $PowerShellParityRoot "same-project"
+        $PosixParityTarget = Join-Path $PosixParityRoot "same-project"
+        New-Item -ItemType Directory -Path $PowerShellParityRoot, $PosixParityRoot -Force | Out-Null
+
+        & (Join-Path $RepoDir "agentforge.ps1") -SourceDir $RepoDir -Target $PowerShellParityTarget -Primary agents -Harness yes -Skill yes -Git no
+        if ($LASTEXITCODE -ne 0) { throw "PowerShell parity generation failed" }
+        & $ShCommand.Source (Join-Path $RepoDir "agentforge.sh") --source-dir $RepoDir --target $PosixParityTarget --primary agents --harness yes --skill yes --git no
+        if ($LASTEXITCODE -ne 0) { throw "POSIX parity generation failed" }
+
+        $PowerShellFiles = @(Get-ChildItem -LiteralPath $PowerShellParityTarget -File -Recurse | ForEach-Object {
+            $_.FullName.Substring($PowerShellParityTarget.Length + 1).Replace([IO.Path]::DirectorySeparatorChar, "/")
+        } | Sort-Object)
+        $PosixFiles = @(Get-ChildItem -LiteralPath $PosixParityTarget -File -Recurse | ForEach-Object {
+            $_.FullName.Substring($PosixParityTarget.Length + 1).Replace([IO.Path]::DirectorySeparatorChar, "/")
+        } | Sort-Object)
+        if (($PowerShellFiles -join "`n") -ne ($PosixFiles -join "`n")) { throw "POSIX and PowerShell generated different file sets" }
+
+        foreach ($RelativePath in $PowerShellFiles) {
+            $PowerShellHash = (Get-FileHash -LiteralPath (Join-Path $PowerShellParityTarget $RelativePath) -Algorithm SHA256).Hash
+            $PosixHash = (Get-FileHash -LiteralPath (Join-Path $PosixParityTarget $RelativePath) -Algorithm SHA256).Hash
+            if ($PowerShellHash -ne $PosixHash) { throw "POSIX and PowerShell content differs: $RelativePath" }
+        }
+    } else {
+        Write-Host "SKIP: byte-for-byte launcher parity requires POSIX sh on a non-Windows host."
+    }
 
     $ConflictTarget = Join-Path $TempDir "parent-conflict"
     New-Item -ItemType Directory -Path $ConflictTarget -Force | Out-Null

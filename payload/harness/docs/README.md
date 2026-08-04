@@ -7,7 +7,8 @@ This directory is the versioned system of record for project knowledge.
 - `product-specs/`: product behavior and acceptance criteria.
 - `exec-plans/`: active plans, completed plans, and technical debt.
 - `quality/`: quality, reliability, and security requirements.
-- `harness/`: Harness setup, commands, and validation contract.
+- `harness/`: Harness delivery rules, project-native commands, and enforcement
+  map.
 
 Keep indexes current and cross-link new documents. Prefer concise maps that
 lead an agent to authoritative details.

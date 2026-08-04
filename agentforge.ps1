@@ -9,7 +9,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$AgentForgeVersion = "0.2.0"
+$AgentForgeVersion = "0.3.0"
 $DefaultBaseUrl = "https://raw.githubusercontent.com/wyizhou/agentForge/v$AgentForgeVersion"
 $OrchestrateRepo = "wyizhou/orchestrateParallelWork-skill"
 
@@ -39,7 +39,7 @@ if (-not $Primary) {
         }
     }
 }
-if ($Harness) { $Harness = Normalize-YesNo $Harness } else { $Harness = Ask-YesNo "Generate the progressive Harness scaffold? [Y/n]" }
+if ($Harness) { $Harness = Normalize-YesNo $Harness } else { $Harness = Ask-YesNo "Generate the progressive Harness documentation scaffold? [Y/n]" }
 if ($Skill) { $Skill = Normalize-YesNo $Skill } else { $Skill = Ask-YesNo "Install orchestrate-parallel-work for Codex and Claude Code? [Y/n]" }
 
 $TargetPath = [IO.Path]::GetFullPath($Target)
@@ -190,14 +190,15 @@ try {
             }
         }
 
-        $OriginText = @"
-# Upstream origin
-
-- Repository: https://github.com/$OrchestrateRepo
-- Skill path: skills/orchestrate-parallel-work
-- Commit: $SkillCommit
-- Installed by: agentForge $AgentForgeVersion
-"@
+        $OriginText = @(
+            "# Upstream origin",
+            "",
+            "- Repository: https://github.com/$OrchestrateRepo",
+            "- Skill path: skills/orchestrate-parallel-work",
+            "- Commit: $SkillCommit",
+            "- Installed by: agentForge $AgentForgeVersion",
+            ""
+        ) -join "`n"
         foreach ($SkillRoot in @(".agents/skills/orchestrate-parallel-work", ".claude/skills/orchestrate-parallel-work")) {
             $OriginPath = Join-Path $StageDir "$SkillRoot/ORIGIN.md"
             [IO.File]::WriteAllText($OriginPath, $OriginText, [Text.UTF8Encoding]::new($false))
@@ -253,13 +254,13 @@ try {
     Write-Host "agentForge $AgentForgeVersion completed for $ProjectName."
     Write-Host "Canonical guide: $GuideVariant.md"
     Write-Host "Compatibility guide: $BridgeVariant.md"
-    Write-Host "Progressive Harness: $Harness"
+    Write-Host "Progressive Harness documentation: $Harness"
     $SkillSuffix = if ($SkillCommit) { " ($SkillCommit)" } else { "" }
     Write-Host "orchestrate-parallel-work: $Skill$SkillSuffix"
     if ($Harness -eq "yes") {
         Write-Host ""
-        Write-Host "The progressive Harness is active. You can start development now."
-        Write-Host "AI coding agents must follow docs/harness/DELIVERY_RULES.md and evolve checks with the project."
+        Write-Host "The progressive Harness documentation is active. You can start development now."
+        Write-Host "AI coding agents must follow docs/harness/DELIVERY_RULES.md and run the project's native checks before delivery."
     }
 } catch {
     [Console]::Error.WriteLine("ERROR: " + $_.Exception.Message)

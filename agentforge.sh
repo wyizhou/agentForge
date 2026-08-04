@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-AGENTFORGE_VERSION="0.2.0"
+AGENTFORGE_VERSION="0.3.0"
 DEFAULT_BASE_URL="https://raw.githubusercontent.com/wyizhou/agentForge/v$AGENTFORGE_VERSION"
 ORCHESTRATE_REPO="wyizhou/orchestrateParallelWork-skill"
 
@@ -14,7 +14,7 @@ source_dir=${AGENTFORGE_SOURCE_DIR:-}
 
 usage() {
   cat <<'EOF'
-agentForge - build an AI coding Harness in the target project
+agentForge - build an AI coding scaffold in the target project
 
 Usage:
   sh agentforge.sh [options]
@@ -22,7 +22,7 @@ Usage:
 Options:
   --target PATH                 Target project directory (default: current)
   --primary agents|claude      Canonical instruction file
-  --harness yes|no             Generate the progressive Harness scaffold
+  --harness yes|no             Generate progressive Harness documentation
   --skill yes|no               Install orchestrate-parallel-work
   --git yes|no                 Initialize Git when no repository exists
   --source-dir PATH             Read agentForge payload from a local checkout
@@ -98,7 +98,7 @@ if [ -z "$primary" ]; then
 fi
 
 if [ -z "$with_harness" ]; then
-  answer=$(prompt_line "Generate the progressive Harness scaffold? [Y/n]: ")
+  answer=$(prompt_line "Generate the progressive Harness documentation scaffold? [Y/n]: ")
   [ -n "$answer" ] || answer="yes"
   with_harness=$(normalize_yes_no "$answer") || die "Please answer yes or no"
 fi
@@ -350,10 +350,6 @@ while IFS= read -r destination || [ -n "$destination" ]; do
   cp "$stage_dir/$destination" "$target/$destination"
 done < "$destinations"
 
-if [ "$with_harness" = "yes" ]; then
-  chmod +x "$target/harness/verify.sh"
-fi
-
 if [ "$git_choice" = "yes" ]; then
   git -c init.defaultBranch=main -C "$target" init >/dev/null
   echo "Initialized Git repository in $target."
@@ -363,10 +359,10 @@ echo ""
 echo "agentForge $AGENTFORGE_VERSION completed for $project_name."
 echo "Canonical guide: $guide_variant.md"
 echo "Compatibility guide: $bridge_variant.md"
-echo "Progressive Harness: $with_harness"
+echo "Progressive Harness documentation: $with_harness"
 echo "orchestrate-parallel-work: $with_skill${skill_commit:+ ($skill_commit)}"
 if [ "$with_harness" = "yes" ]; then
   echo ""
-  echo "The progressive Harness is active. You can start development now."
-  echo "AI coding agents must follow docs/harness/DELIVERY_RULES.md and evolve checks with the project."
+  echo "The progressive Harness documentation is active. You can start development now."
+  echo "AI coding agents must follow docs/harness/DELIVERY_RULES.md and run the project's native checks before delivery."
 fi

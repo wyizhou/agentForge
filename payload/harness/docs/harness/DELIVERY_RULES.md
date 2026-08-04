@@ -17,7 +17,9 @@ a technology stack exists.
    gate unless the project deliberately replaces it with documented evidence.
 5. Add formatting, type checking, builds, integration tests, security checks,
    and CI when the project's technology and risks make them applicable.
-6. Before delivery, run every currently applicable check and fix failures.
+6. Before delivery, run every currently applicable project-native check
+   directly and fix failures. agentForge does not generate or require a unified
+   verification wrapper.
 7. Do not delete tests, weaken rules, suppress meaningful diagnostics, or skip
    checks merely to obtain a passing result.
 8. Record authoritative commands in `COMMANDS.md` and their enforcement in

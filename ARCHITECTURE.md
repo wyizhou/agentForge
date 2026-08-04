@@ -21,13 +21,14 @@ launchers and one shared payload.
 6. Optionally download the pinned `orchestrate-parallel-work` payload into both
    Codex and Claude Code project skill locations.
 7. Optionally initialize Git when the target is not already in a work tree.
-8. Confirm that the progressive Harness is active and development can begin.
+8. Confirm that the documentation-based progressive Harness is active and
+   development can begin.
 
 ## Safety properties
 
 - Preflight happens before writes.
-- Existing files are never replaced in v0.2.
+- Existing files are never replaced.
 - Network payloads use HTTPS and an exact upstream commit after resolution.
-- A generated Harness begins with enforceable delivery rules and lightweight
-  structural verification, then gains project-specific checks as they become
-  applicable.
+- A generated Harness contains guidance and versioned project documentation,
+  not agentForge-owned verification wrappers. Coding agents add and run the
+  project's native checks as they become applicable.

@@ -25,10 +25,11 @@ in `docs/`; do not turn this file into an encyclopedia.
   regression test that fails without the fix.
 - Add type checks, builds, integration tests, security checks, and CI when they
   become applicable, then keep them mandatory for later deliveries.
-- Update `docs/harness/COMMANDS.md`, `docs/harness/CHECKS.md`, and the unified
-  verification entry points whenever project tooling changes.
-- Run every currently applicable check before delivery. Never delete tests,
-  weaken rules, or skip meaningful failures merely to obtain a pass.
+- Update `docs/harness/COMMANDS.md` and `docs/harness/CHECKS.md` whenever project
+  tooling changes.
+- Run every currently applicable project-native test, lint, type, and build
+  command directly before delivery. Never delete tests, weaken rules, or skip
+  meaningful failures merely to obtain a pass.
 
 ## Repository knowledge map
 
@@ -37,8 +38,11 @@ in `docs/`; do not turn this file into an encyclopedia.
 - `docs/product-specs/`: product behavior and acceptance criteria.
 - `docs/exec-plans/`: plans for complex work and technical debt.
 - `docs/quality/`: quality, reliability, and security requirements.
+- `docs/harness/README.md`: Harness documentation map.
 - `docs/harness/DELIVERY_RULES.md`: mandatory progressive delivery contract.
 - `docs/harness/COMMANDS.md`: authoritative development and validation commands.
+- `docs/harness/CHECKS.md`: mapping from project invariants to their current
+  enforcement.
 
 ## Planning and implementation
 
@@ -62,10 +66,11 @@ in `docs/`; do not turn this file into an encyclopedia.
 
 ## Verification
 
-Before delivery, run the repository's unified verification entry point:
-
-- macOS/Linux: `sh ./harness/verify.sh`
-- Windows: `powershell -ExecutionPolicy Bypass -File .\harness\verify.ps1`
+Before delivery, read `docs/harness/COMMANDS.md` and run every applicable
+project-native test, lint, type, build, integration, and security command
+directly. When a required command has not been established yet, add the
+smallest suitable tool and command as part of the task that makes it applicable,
+then record it in `COMMANDS.md` and its enforcement in `CHECKS.md`.
 
 Report the checks run, results, skipped checks and reasons, and remaining risks.
 Never delete tests or reduce enforcement to obtain a passing result.

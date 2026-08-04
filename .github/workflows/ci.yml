@@ -9,6 +9,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Verify tag matches project version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: test "v$(cat VERSION)" = "$GITHUB_REF_NAME"
       - name: Verify
         run: ./harness/verify.sh
 
@@ -34,7 +37,10 @@ jobs:
           sh "$launcher" --target "$target" --primary agents --harness yes --skill no --git no
           test -f "$target/AGENTS.md"
           test -f "$target/docs/harness/DELIVERY_RULES.md"
-          sh "$target/harness/verify.sh"
+          test -f "$target/docs/harness/COMMANDS.md"
+          test -f "$target/docs/harness/CHECKS.md"
+          test ! -e "$target/harness"
+          grep -F "docs/harness/DELIVERY_RULES.md" "$target/AGENTS.md"
 
   remote-windows:
     if: startsWith(github.ref, 'refs/tags/v')
@@ -54,4 +60,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           if (-not (Test-Path -LiteralPath (Join-Path $Target "CLAUDE.md") -PathType Leaf)) { throw "Missing CLAUDE.md" }
           if (-not (Test-Path -LiteralPath (Join-Path $Target "docs/harness/DELIVERY_RULES.md") -PathType Leaf)) { throw "Missing delivery rules" }
-          & (Join-Path $Target "harness/verify.ps1")
+          if (-not (Test-Path -LiteralPath (Join-Path $Target "docs/harness/COMMANDS.md") -PathType Leaf)) { throw "Missing command catalog" }
+          if (-not (Test-Path -LiteralPath (Join-Path $Target "docs/harness/CHECKS.md") -PathType Leaf)) { throw "Missing enforcement map" }
+          if (Test-Path -LiteralPath (Join-Path $Target "harness")) { throw "Generated project unexpectedly contains a Harness executable directory" }
+          if ((Get-Content -LiteralPath (Join-Path $Target "CLAUDE.md") -Raw) -notmatch "docs/harness/DELIVERY_RULES\.md") { throw "CLAUDE.md does not reference delivery rules" }

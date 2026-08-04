@@ -6,8 +6,9 @@ Do not mark future technology as active before it exists.
 
 | Invariant | Current enforcement | Adoption rule | CI gate |
 | --- | --- | --- | --- |
-| Harness contract remains available | Generated verifier checks required Harness documents | From repository creation | When CI exists |
 
-Add rows for linting and tests with the first executable code. Add formatting,
-types, builds, integrations, architecture boundaries, security, dependencies,
-and other controls when they become applicable.
+An empty repository intentionally begins with no project-specific enforcement
+rows. Add rows for linting and tests with the first executable code, naming the
+actual project-native command or review procedure. Add formatting, types,
+builds, integrations, architecture boundaries, security, dependencies, and
+other controls when they become applicable.
