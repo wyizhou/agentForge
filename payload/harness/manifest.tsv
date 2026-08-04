@@ -14,9 +14,8 @@ docs/quality/QUALITY.md	docs/quality/QUALITY.md
 docs/quality/RELIABILITY.md	docs/quality/RELIABILITY.md
 docs/quality/SECURITY.md	docs/quality/SECURITY.md
 docs/harness/README.md	docs/harness/README.md
-docs/harness/BOOTSTRAP_PROMPT.md	docs/harness/BOOTSTRAP_PROMPT.md
+docs/harness/DELIVERY_RULES.md	docs/harness/DELIVERY_RULES.md
 docs/harness/COMMANDS.md	docs/harness/COMMANDS.md
 docs/harness/CHECKS.md	docs/harness/CHECKS.md
-harness/STATUS	harness/STATUS
 harness/verify.sh	harness/verify.sh
 harness/verify.ps1	harness/verify.ps1

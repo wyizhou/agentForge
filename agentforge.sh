@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-AGENTFORGE_VERSION="0.1.0"
+AGENTFORGE_VERSION="0.2.0"
 DEFAULT_BASE_URL="https://raw.githubusercontent.com/wyizhou/agentForge/v$AGENTFORGE_VERSION"
 ORCHESTRATE_REPO="wyizhou/orchestrateParallelWork-skill"
 
@@ -22,7 +22,7 @@ Usage:
 Options:
   --target PATH                 Target project directory (default: current)
   --primary agents|claude      Canonical instruction file
-  --harness yes|no             Generate the strict Harness scaffold
+  --harness yes|no             Generate the progressive Harness scaffold
   --skill yes|no               Install orchestrate-parallel-work
   --git yes|no                 Initialize Git when no repository exists
   --source-dir PATH             Read agentForge payload from a local checkout
@@ -98,7 +98,7 @@ if [ -z "$primary" ]; then
 fi
 
 if [ -z "$with_harness" ]; then
-  answer=$(prompt_line "Generate the strict Harness scaffold? [Y/n]: ")
+  answer=$(prompt_line "Generate the progressive Harness scaffold? [Y/n]: ")
   [ -n "$answer" ] || answer="yes"
   with_harness=$(normalize_yes_no "$answer") || die "Please answer yes or no"
 fi
@@ -363,11 +363,10 @@ echo ""
 echo "agentForge $AGENTFORGE_VERSION completed for $project_name."
 echo "Canonical guide: $guide_variant.md"
 echo "Compatibility guide: $bridge_variant.md"
-echo "Strict Harness: $with_harness"
+echo "Progressive Harness: $with_harness"
 echo "orchestrate-parallel-work: $with_skill${skill_commit:+ ($skill_commit)}"
 if [ "$with_harness" = "yes" ]; then
   echo ""
-  echo "Next: open your AI coding agent in the project root and give it the prompt in:"
-  echo "  docs/harness/BOOTSTRAP_PROMPT.md"
-  echo "The generated Harness intentionally remains INCOMPLETE until that prompt succeeds."
+  echo "The progressive Harness is active. You can start development now."
+  echo "AI coding agents must follow docs/harness/DELIVERY_RULES.md and evolve checks with the project."
 fi

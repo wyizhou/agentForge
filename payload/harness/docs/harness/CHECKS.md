@@ -1,15 +1,13 @@
 # Enforcement map
 
-Complete this table during Harness bootstrap. Every mandatory rule needs either
-an automated check or an explicit owner and review procedure.
+Maintain this map as the project evolves. Every currently applicable mandatory
+rule needs either an automated check or an explicit owner and review procedure.
+Do not mark future technology as active before it exists.
 
-| Invariant | Enforcement | Failure guidance | CI gate |
+| Invariant | Current enforcement | Adoption rule | CI gate |
 | --- | --- | --- | --- |
-| Documentation has no bootstrap placeholders | Pending AI analysis | Pending | Required |
-| Formatting | Pending AI analysis | Pending | Required |
-| Linting | Pending AI analysis | Pending | Required |
-| Types or equivalent static validation | Pending AI analysis | Pending | As applicable |
-| Tests | Pending AI analysis | Pending | Required |
-| Build/package | Pending AI analysis | Pending | As applicable |
-| Architecture boundaries | Pending AI analysis | Pending | Required |
-| Security/dependencies | Pending AI analysis | Pending | Required |
+| Harness contract remains available | Generated verifier checks required Harness documents | From repository creation | When CI exists |
+
+Add rows for linting and tests with the first executable code. Add formatting,
+types, builds, integrations, architecture boundaries, security, dependencies,
+and other controls when they become applicable.

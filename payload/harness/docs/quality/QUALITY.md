@@ -1,9 +1,10 @@
 # Quality contract
 
-Define measurable expectations for correctness, maintainability, performance,
-accessibility, and user-visible behavior. Link each requirement to an automated
-check or an explicitly owned manual review.
+The following rules apply from the first behavior change:
 
-<!-- AGENTFORGE:QUALITY:START -->
-Pending AI analysis.
-<!-- AGENTFORGE:QUALITY:END -->
+- New or changed behavior includes focused automated tests.
+- Bug fixes include regression tests.
+- The first executable code introduces an appropriate linter and test runner.
+- Every applicable configured check passes before delivery.
+- Project-specific correctness, maintainability, performance, accessibility,
+  and user-visible requirements are added here as they become known.

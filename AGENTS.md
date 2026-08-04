@@ -9,9 +9,8 @@ Windows PowerShell 5.1 or newer.
 ## Start here
 
 1. Read `ARCHITECTURE.md` and `docs/README.md`.
-2. Inspect `harness/STATUS`; normal development requires `READY`.
-3. Preserve unrelated user changes and avoid destructive Git commands.
-4. For complex work, maintain a plan under `docs/exec-plans/active/`.
+2. Preserve unrelated user changes and avoid destructive Git commands.
+3. For complex work, maintain a plan under `docs/exec-plans/active/`.
 
 ## Implementation rules
 

@@ -1,6 +1,6 @@
 # Core engineering beliefs
 
-Replace or refine these principles during Harness bootstrap:
+Refine these principles as project evidence and recurring lessons emerge:
 
 - Keep repository knowledge local, versioned, and discoverable.
 - Prefer mechanically enforced boundaries over repeated prose reminders.

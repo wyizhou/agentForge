@@ -22,17 +22,61 @@ try {
         "CLAUDE.md",
         "AGENTS.md",
         "ARCHITECTURE.md",
-        "harness/STATUS",
-        "docs/harness/BOOTSTRAP_PROMPT.md",
+        "docs/harness/DELIVERY_RULES.md",
+        "harness/verify.ps1",
         ".agents/skills/orchestrate-parallel-work/SKILL.md",
         ".claude/skills/orchestrate-parallel-work/SKILL.md"
     )) {
         if (-not (Test-Path -LiteralPath (Join-Path $Target $Path) -PathType Leaf)) { throw "Missing generated file: $Path" }
     }
 
-    if ((Get-Content -LiteralPath (Join-Path $Target "harness/STATUS") -Raw).Trim() -ne "INCOMPLETE") {
-        throw "Generated Harness did not start INCOMPLETE"
+    if (Test-Path -LiteralPath (Join-Path $Target "harness/STATUS")) { throw "Legacy Harness status was generated" }
+    if (Test-Path -LiteralPath (Join-Path $Target "docs/harness/BOOTSTRAP_PROMPT.md")) { throw "Legacy bootstrap prompt was generated" }
+    & (Join-Path $Target "harness/verify.ps1")
+    if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) { throw "Empty-project Harness verification failed" }
+    if ((Get-Content -LiteralPath (Join-Path $Target "harness/verify.ps1") -Raw) -notmatch "No project-specific checks are registered yet") {
+        throw "Generated verifier lacks progressive empty-project notice"
     }
+
+    $ProjectNotes = Join-Path $Target "PROJECT_NOTES.md"
+    [IO.File]::WriteAllText($ProjectNotes, "# Project notes`n")
+    & (Join-Path $Target "harness/verify.ps1")
+    if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) { throw "Documentation-only project incorrectly required code checks" }
+    Remove-Item -LiteralPath $ProjectNotes -Force
+
+    $UnregisteredCode = Join-Path $Target "app.py"
+    [IO.File]::WriteAllText($UnregisteredCode, "print('project code')`n")
+    & (Join-Path $Target "harness/verify.ps1")
+    if ($LASTEXITCODE -eq 0) { throw "Harness passed after code was added without project checks" }
+    Remove-Item -LiteralPath $UnregisteredCode -Force
+
+    $UppercaseCode = Join-Path $Target "APP.PY"
+    [IO.File]::WriteAllText($UppercaseCode, "print('uppercase extension')`n")
+    & (Join-Path $Target "harness/verify.ps1")
+    if ($LASTEXITCODE -eq 0) { throw "Harness missed an uppercase source extension" }
+    Remove-Item -LiteralPath $UppercaseCode -Force
+
+    $DocsCode = Join-Path $Target "docs/site/index.html"
+    New-Item -ItemType Directory -Path (Split-Path -Parent $DocsCode) -Force | Out-Null
+    [IO.File]::WriteAllText($DocsCode, "<!doctype html>`n")
+    & (Join-Path $Target "harness/verify.ps1")
+    if ($LASTEXITCODE -eq 0) { throw "Harness missed project code under docs" }
+    Remove-Item -LiteralPath $DocsCode -Force
+
+    $UnlistedLanguage = Join-Path $Target "main.pl"
+    [IO.File]::WriteAllText($UnlistedLanguage, "print 'project code';`n")
+    & (Join-Path $Target "harness/verify.ps1")
+    if ($LASTEXITCODE -eq 0) { throw "Harness missed an unlisted programming language" }
+    Remove-Item -LiteralPath $UnlistedLanguage -Force
+
+    $ExtensionlessCode = Join-Path $Target "tool"
+    [IO.File]::WriteAllText($ExtensionlessCode, "#!/bin/sh`n")
+    & (Join-Path $Target "harness/verify.ps1")
+    if ($LASTEXITCODE -eq 0) { throw "Harness missed an extensionless source file" }
+    Remove-Item -LiteralPath $ExtensionlessCode -Force
+
+    & (Join-Path $Target "harness/verify.ps1")
+    if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) { throw "Harness did not recover after unregistered code was removed" }
 
     $CodexSkill = Get-Content -LiteralPath (Join-Path $Target ".agents/skills/orchestrate-parallel-work/SKILL.md") -Raw
     $ClaudeSkill = Get-Content -LiteralPath (Join-Path $Target ".claude/skills/orchestrate-parallel-work/SKILL.md") -Raw

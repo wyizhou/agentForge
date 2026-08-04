@@ -9,21 +9,26 @@ in `docs/`; do not turn this file into an encyclopedia.
 ## Start every task
 
 1. Inspect the working directory and Git status.
-2. Read `harness/STATUS`.
+2. Read `docs/harness/DELIVERY_RULES.md` completely.
 3. Read `docs/README.md` and the documents relevant to the task.
 4. Check `docs/exec-plans/active/` for an existing plan.
 5. Read `SKILLS.md` and load a Skill only when its trigger matches.
 
-## Harness gate
+## Progressive Harness
 
-- If `harness/STATUS` is `INCOMPLETE`, read and execute the instructions in
-  `docs/harness/BOOTSTRAP_PROMPT.md` before normal feature development.
-- Inspect the real codebase and configure formatting, linting, type checks,
-  tests, builds, security checks, and CI for the actual technology stack.
-- Run every configured check. Change the status to `READY` only after the full
-  verification entry point succeeds.
-- Never claim that an incomplete Harness is ready, and never weaken a check
-  merely to make it pass.
+- The Harness evolves with the project; do not invent tools for a stack that
+  does not exist yet.
+- When executable code is first introduced, configure the smallest appropriate
+  test runner and linter in the same task. If code already exists, establish
+  those checks before delivering the next code change.
+- Every behavior change must add or update tests. Every bug fix must include a
+  regression test that fails without the fix.
+- Add type checks, builds, integration tests, security checks, and CI when they
+  become applicable, then keep them mandatory for later deliveries.
+- Update `docs/harness/COMMANDS.md`, `docs/harness/CHECKS.md`, and the unified
+  verification entry points whenever project tooling changes.
+- Run every currently applicable check before delivery. Never delete tests,
+  weaken rules, or skip meaningful failures merely to obtain a pass.
 
 ## Repository knowledge map
 
@@ -32,6 +37,7 @@ in `docs/`; do not turn this file into an encyclopedia.
 - `docs/product-specs/`: product behavior and acceptance criteria.
 - `docs/exec-plans/`: plans for complex work and technical debt.
 - `docs/quality/`: quality, reliability, and security requirements.
+- `docs/harness/DELIVERY_RULES.md`: mandatory progressive delivery contract.
 - `docs/harness/COMMANDS.md`: authoritative development and validation commands.
 
 ## Planning and implementation

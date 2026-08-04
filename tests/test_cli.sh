@@ -27,16 +27,68 @@ sh "$repo_dir/agentforge.sh" \
 assert_file "$case_one/AGENTS.md"
 assert_file "$case_one/CLAUDE.md"
 assert_file "$case_one/ARCHITECTURE.md"
-assert_file "$case_one/docs/harness/BOOTSTRAP_PROMPT.md"
+assert_file "$case_one/docs/harness/DELIVERY_RULES.md"
 assert_file "$case_one/harness/verify.sh"
 assert_contains "$case_one/AGENTS.md" "My Strict Project project instructions"
 assert_contains "$case_one/CLAUDE.md" "@AGENTS.md"
-[ "$(tr -d '\r\n' < "$case_one/harness/STATUS")" = "INCOMPLETE" ] || fail "Harness did not start incomplete"
+assert_absent "$case_one/docs/harness/BOOTSTRAP_PROMPT.md"
+assert_absent "$case_one/harness/STATUS"
 [ -d "$case_one/.git" ] || fail "Git repository was not initialized"
-if sh "$case_one/harness/verify.sh" > "$tmp_dir/generated-verify.log" 2>&1; then
-  fail "Incomplete generated Harness unexpectedly passed"
-fi
-assert_contains "$tmp_dir/generated-verify.log" "Harness is INCOMPLETE"
+sh "$case_one/harness/verify.sh" > "$tmp_dir/generated-verify.log" 2>&1 || fail "Empty-project Harness verification failed"
+assert_contains "$tmp_dir/generated-verify.log" "No project-specific checks are registered yet"
+assert_contains "$tmp_dir/generated-verify.log" "Harness verification passed"
+assert_contains "$tmp_dir/case-one.log" "You can start development now"
+
+printf '# Project notes\n' > "$case_one/PROJECT_NOTES.md"
+sh "$case_one/harness/verify.sh" > "$tmp_dir/docs-only.log" 2>&1 || fail "Documentation-only project incorrectly required code checks"
+rm -f "$case_one/PROJECT_NOTES.md"
+
+printf 'print("project code")\n' > "$case_one/app.py"
+set +e
+sh "$case_one/harness/verify.sh" > "$tmp_dir/unregistered-code.log" 2>&1
+unregistered_code_status=$?
+set -e
+[ "$unregistered_code_status" -ne 0 ] || fail "Harness passed after code was added without project checks"
+assert_contains "$tmp_dir/unregistered-code.log" "Project code or a technology manifest exists"
+assert_contains "$tmp_dir/unregistered-code.log" "app.py"
+rm -f "$case_one/app.py"
+
+printf 'print("uppercase extension")\n' > "$case_one/APP.PY"
+set +e
+sh "$case_one/harness/verify.sh" > "$tmp_dir/uppercase-code.log" 2>&1
+uppercase_code_status=$?
+set -e
+[ "$uppercase_code_status" -ne 0 ] || fail "Harness missed an uppercase source extension"
+assert_contains "$tmp_dir/uppercase-code.log" "APP.PY"
+rm -f "$case_one/APP.PY"
+
+mkdir -p "$case_one/docs/site"
+printf '<!doctype html>\n' > "$case_one/docs/site/index.html"
+set +e
+sh "$case_one/harness/verify.sh" > "$tmp_dir/docs-code.log" 2>&1
+docs_code_status=$?
+set -e
+[ "$docs_code_status" -ne 0 ] || fail "Harness missed project code under docs"
+assert_contains "$tmp_dir/docs-code.log" "docs/site/index.html"
+rm -f "$case_one/docs/site/index.html"
+
+printf 'print "project code";\n' > "$case_one/main.pl"
+set +e
+sh "$case_one/harness/verify.sh" > "$tmp_dir/unlisted-language.log" 2>&1
+unlisted_language_status=$?
+set -e
+[ "$unlisted_language_status" -ne 0 ] || fail "Harness missed an unlisted programming language"
+assert_contains "$tmp_dir/unlisted-language.log" "main.pl"
+rm -f "$case_one/main.pl"
+
+printf '#!/bin/sh\n' > "$case_one/tool"
+set +e
+sh "$case_one/harness/verify.sh" > "$tmp_dir/extensionless-code.log" 2>&1
+extensionless_code_status=$?
+set -e
+[ "$extensionless_code_status" -ne 0 ] || fail "Harness missed an extensionless source file"
+assert_contains "$tmp_dir/extensionless-code.log" "tool"
+rm -f "$case_one/tool"
 
 case_two="$tmp_dir/basic-claude"
 sh "$repo_dir/agentforge.sh" \

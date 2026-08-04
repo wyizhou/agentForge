@@ -24,7 +24,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
-      - name: Verify published POSIX bootstrap
+      - name: Verify published POSIX launcher
         run: |
           launcher=$(mktemp)
           target=$(mktemp -d)/remote-project
@@ -33,13 +33,14 @@ jobs:
             -o "$launcher"
           sh "$launcher" --target "$target" --primary agents --harness yes --skill no --git no
           test -f "$target/AGENTS.md"
-          test -f "$target/docs/harness/BOOTSTRAP_PROMPT.md"
+          test -f "$target/docs/harness/DELIVERY_RULES.md"
+          sh "$target/harness/verify.sh"
 
   remote-windows:
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: windows-latest
     steps:
-      - name: Verify published PowerShell bootstrap
+      - name: Verify published PowerShell launcher
         shell: powershell
         run: |
           $Launcher = Join-Path $env:RUNNER_TEMP "agentforge.ps1"
@@ -52,4 +53,5 @@ jobs:
           & $Launcher -Target $Target -Primary claude -Harness yes -Skill no -Git no
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           if (-not (Test-Path -LiteralPath (Join-Path $Target "CLAUDE.md") -PathType Leaf)) { throw "Missing CLAUDE.md" }
-          if (-not (Test-Path -LiteralPath (Join-Path $Target "docs/harness/BOOTSTRAP_PROMPT.md") -PathType Leaf)) { throw "Missing bootstrap prompt" }
+          if (-not (Test-Path -LiteralPath (Join-Path $Target "docs/harness/DELIVERY_RULES.md") -PathType Leaf)) { throw "Missing delivery rules" }
+          & (Join-Path $Target "harness/verify.ps1")

@@ -5,4 +5,4 @@ tests or other acceptance evidence.
 
 | Product area | Status | Specification | Acceptance evidence |
 | --- | --- | --- | --- |
-| Pending analysis | Draft | — | — |
+| No product areas recorded yet | — | — | — |

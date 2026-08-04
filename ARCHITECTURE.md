@@ -21,12 +21,13 @@ launchers and one shared payload.
 6. Optionally download the pinned `orchestrate-parallel-work` payload into both
    Codex and Claude Code project skill locations.
 7. Optionally initialize Git when the target is not already in a work tree.
-8. Print the durable Harness bootstrap prompt path and next commands.
+8. Confirm that the progressive Harness is active and development can begin.
 
 ## Safety properties
 
 - Preflight happens before writes.
-- Existing files are never replaced in v0.1.
+- Existing files are never replaced in v0.2.
 - Network payloads use HTTPS and an exact upstream commit after resolution.
-- A generated strict Harness begins as `INCOMPLETE` and fails closed until an
-  AI completes and validates the project-specific checks.
+- A generated Harness begins with enforceable delivery rules and lightweight
+  structural verification, then gains project-specific checks as they become
+  applicable.
