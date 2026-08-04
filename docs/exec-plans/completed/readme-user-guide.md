@@ -26,7 +26,7 @@ project. Move implementation and maintainer details into linked documents.
 - [x] Rewrite the root README.
 - [x] Add and link supporting technical documents.
 - [x] Verify commands, links, formatting, and repository tests.
-- [ ] Publish the documentation update.
+- [x] Publish the documentation update.
 
 ## Acceptance evidence
 
@@ -40,6 +40,8 @@ project. Move implementation and maintainer details into linked documents.
 - POSIX and PowerShell README command blocks pass syntax parsing.
 - The full repository verification suite passes with the portable PowerShell
   runtime, including POSIX/PowerShell generator parity.
+- GitHub Actions run `30887495037` passed on Ubuntu and native Windows for the
+  published default-branch documentation update.
 
 ## Risks
 
