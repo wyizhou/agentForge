@@ -1,32 +1,115 @@
-# agentForge project instructions
+# 项目指令
 
-## Scope
+## 权威性与状态
 
-This repository builds the cross-platform `agentForge` scaffold generator.
-Keep runtime code dependency-free: POSIX environments use `sh`; Windows uses
-Windows PowerShell 5.1 or newer.
+本文件是 AI Agent 的仓库级权威指引。更高优先级的系统指令和用户指令优先于本文件。
 
-## Start here
+仓库状态通过以下文件外置：
 
-1. Read `ARCHITECTURE.md` and `docs/README.md`.
-2. Preserve unrelated user changes and avoid destructive Git commands.
-3. For complex work, maintain a plan under `docs/exec-plans/active/`.
+- `rules.md` 保存经过人工批准的硬性约束。
+- `memory.md` 保存持久偏好、已验证的项目事实以及活动计划链接。
+- `docs/exec-plans/active/` 保存任务步骤、检查点、阻塞项和验证状态。执行计划是对应任务状态的唯一事实源。
+- `CHANGELOG.md` 保存已发布版本，仅在发布工作中读取。
 
-## Implementation rules
+## 每个上下文的启动流程
 
-- Keep `agentforge.sh` and `agentforge.ps1` behaviorally equivalent.
-- Put generated content in `payload/`; do not duplicate large templates inside
-  the launchers.
-- Runtime behavior must not require Node.js, Python, `jq`, or a package manager.
-- Interactive mode asks no more than four questions.
-- Non-interactive flags must remain available for tests and automation.
-- Existing target files must never be overwritten silently.
-- Skill downloads must be limited to `orchestrate-parallel-work` and record the
-  resolved upstream commit.
+对于任何涉及仓库分析、审查或修改的请求：
 
-## Verification
+1. 完整读取本文件。
+2. 检查是否存在可用的 `git` 命令。
+3. 确认项目位于 Git worktree 中。
+4. 检查 Git 根目录、当前分支、已跟踪和未跟踪文件以及工作区改动，并保护无关工作。
+5. 完整读取 `rules.md` 和 `memory.md`。
+6. 检查 `docs/exec-plans/active/`，存在匹配计划时恢复该计划。
+7. 检查 `skills/`，仅在触发条件匹配时读取相应的 `skills/<name>/SKILL.md`。
 
-Run `./harness/verify.sh` before delivery. On Windows, run
-`powershell -ExecutionPolicy Bypass -File .\harness\verify.ps1`.
+不检查或修改仓库的纯概念问答，不受 Git 门禁和执行计划要求约束。
 
-Report the checks run, results, skipped checks, and remaining risks.
+## Git 门禁
+
+开始仓库工作前必须具备 Git。
+
+- Git 不可用时停止工作。报告操作系统、失败的检查以及拟采用的安装方式，并请求用户明确批准安装 Git。未经批准不得安装。
+- Git 可用但项目不在 worktree 中时停止工作，解释 `git init` 的影响，并仅在取得单独、明确的批准后执行。
+- 批准安装 Git 不代表批准执行 `git init`；批准执行 `git init` 也不代表批准安装软件。
+- 当前目录嵌套于上层 worktree 但不是仓库根目录时，报告实际根目录，并询问用户是沿用上层仓库还是初始化独立仓库，不得代替用户决定。
+- 用户拒绝、操作失败或仍有歧义时继续停止。在门禁通过前不得创建计划或修改项目文件。
+- 工作区可以不干净，但绝不能覆盖或丢弃无关改动。
+- 除非用户明确要求，不得暂存、提交、创建或切换分支、推送、合并、部署或创建远程资源。
+
+## 执行计划
+
+Git 门禁通过后，除简单状态查询外，每个仓库分析或修改任务都要创建执行计划。存在匹配的活动计划时应继续该计划，不得重复创建。
+
+- 计划命名为 `YYYY-MM-DD-short-slug.md`；发生重名时增加数字后缀。
+- 使用 `docs/exec-plans/template.md`，并遵循 `docs/exec-plans/README.md`。
+- 允许的计划状态为 `active`、`blocked`、`validating`、`completed` 和 `cancelled`。
+- 非终态计划保留在 `active/`；完成或取消后移至 `completed/`，不得删除其历史。
+- 主协调 Agent 是计划、`memory.md` 和任务协调文档的唯一写入者，其他 Agent 返回结构化发现。
+- 完成关键步骤、遇到阻塞、准备交接以及上下文结束前都要更新当前检查点。每个上下文只追加一条简短迭代记录，不保存完整对话。
+- 恢复任务时，用 Git 和文件系统事实核对检查点。仓库证据优先，并记录所有偏差。
+
+## 项目 Skill 仅限本地
+
+- 项目 Skill 仅存放在 `skills/<name>/SKILL.md`。
+- 只有任务与触发条件匹配时才加载 Skill；相对路径以该 Skill 所在目录为基准解析。
+- 禁止将项目 Skill 复制、移动、安装、同步或链接到 `~/.codex`、`~/.claude`、其他用户级目录、全局注册表或仓库外的任何位置。
+- 除非用户单独明确授权，不得为激活项目 Skill 而修改全局配置。
+- Skill 指令始终服从系统指令、用户指令、仓库指令和已批准规则。
+
+## Linter 门禁
+
+- 空项目不需要预先猜测或安装工具。
+- 首次引入可执行代码时，必须在同一任务中根据实际语言、框架和项目类型选择并配置适用的 linter。
+- 多语言或多子项目仓库必须覆盖每一种实际使用的可执行技术栈。优先沿用适用的现有 linter，不建立重复工具。
+- linter 一旦建立，就成为永久交付门禁。不得仅为获得通过而跳过检查、屏蔽有效诊断或弱化规则。
+- 将经过验证的 lint 和 test 入口作为项目事实记录到 `memory.md`；Validator 仍必须依据仓库证据独立确认。
+
+## 功能测试与实施顺序
+
+每项新功能都必须拥有独立目录：
+
+```text
+tests/<feature-slug>/
+```
+
+测试文件名遵循所选测试框架，但该功能的全部测试都必须位于对应目录中。执行计划必须记录功能与测试目录的映射。
+
+每项功能或缺陷修复都按以下顺序进行：
+
+1. 从目标和验收标准提取可测试行为。
+2. 创建功能测试目录，并先定义预期行为。
+3. 覆盖正常行为、错误路径和适用边界；缺陷修复必须包含回归测试。
+4. 实现生产行为。
+5. 同时交付实现和测试。
+6. 将结果交给独立 Validator。
+
+纯治理变更不要求创建新的功能测试目录，但仍必须运行所有现有且适用的检查。
+
+禁止为了获得绿灯而删除测试、移除关键用例、降低断言精度、改变正确预期、过度 mock 真实行为、增加无正当理由的 skip，或隐藏 test/linter 失败。只有目标或验收标准被明确修改后，才可以变更测试预期，并在计划中记录授权依据和理由。代码必须满足正确测试，而不是反过来修改测试迎合错误代码。
+
+## 独立 Validator
+
+任何修改代码、配置、功能文档或其他仓库结果的任务，在完成前都必须通过独立 Validator。
+
+- 验证开始前将计划状态设为 `validating`。
+- 使用未参与实施的全新、只读 Agent。
+- 只向 Validator 提供中性的目标、验收标准、本文件的适用条款、已批准规则和当前仓库结果。
+- 不得提供实施者的推理、辩护、预期结论、计划日志、memory 偏好、声称的结果或缺陷导向提示。
+- Validator 独立检查 Git 变更范围、工具配置、lint 结果、功能测试结构与真实性、是否存在禁止的测试弱化、定向测试、全部适用测试、验收标准和已批准规则。
+- Validator 返回 `PASS`、`FAIL` 或 `INCONCLUSIVE`，并附上命令、观察结果、证据、未满足项和剩余风险；Validator 不得修改文件。
+- 返回 `FAIL` 后，由主 Agent 修复并交给新的独立 Validator。结果为 `INCONCLUSIVE` 或 Validator 不可用时，计划保持 `validating`，主 Agent 的自检不能替代独立验证。
+- 只有 `PASS` 才允许主 Agent 将计划标记并移动到 `completed/`。
+
+只读分析不强制独立 Validator，但必须在计划中记录所依据的证据。
+
+## 规则、记忆与发布
+
+- AI 可以在对话中提出候选规则，但只有人工明确批准后才能在 `rules.md` 中新增或修改生效规则。
+- 当持久偏好、已验证事实、验证命令或活动计划链接变化时，自动维护 `memory.md`。不得在其中保存任务步骤、密钥、凭据、无关个人信息或未经验证的推测。
+- 删除过期记忆。`memory.md` 与执行计划的任务状态冲突时，以执行计划为准。
+- 普通工作不创建版本。只有用户明确要求发布，并批准版本号后，才更新 `CHANGELOG.md`。
+
+## 完成交付
+
+交付报告必须包含完成结果、重要变更文件、lint 和 test 命令及结果、独立 Validator 状态与证据、跳过的检查及原因以及剩余风险。计划仍为 `blocked` 或 `validating` 时，不得声称任务已经完成。
