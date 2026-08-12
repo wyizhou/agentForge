@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+- 新增初始为空的 `src/` 开发实现目录，明确功能实现位于 `src/`，对应测试位于根目录 `tests/<feature-slug>/`。
+- 明确静态模板不使用 `product/` 存放代码或测试，也不预设 `dist/`；未来构建产物目录由实际技术栈决定。
 - 新增初始为空的 `references/` 项目知识目录，用于保存用户主动要求生成或维护的可复用专题知识。
 - 明确 references 与 memory、rules、skills 的职责边界，并禁止 AI 在普通任务中自动生成或沉淀参考资料。
 - 新增长期 `PLANS.md`，建立人工批准的 Roadmap、即时 exec plan、ready batch、隔离 worktree、任务级验证与集成级验证流程。
