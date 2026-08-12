@@ -17,6 +17,9 @@
 ## 已验证的项目事实
 
 - 本项目是无可执行代码、无初始化命令的静态 Loop Engineering 脚手架。
+- `references/` 是仅由用户主动要求生成或维护的项目知识库，不执行自动沉淀。
+- `PLANS.md` 是长期 Roadmap；详细 exec plan 只在任务进入 ready batch 时创建。
+- subagent 使用跨平台的 `low`、`medium`、`high` 模型与推理抽象档位，不记录固定模型名称。
 
 ## 已建立的验证命令
 

@@ -4,6 +4,12 @@
 
 ## Unreleased
 
+- 新增初始为空的 `references/` 项目知识目录，用于保存用户主动要求生成或维护的可复用专题知识。
+- 明确 references 与 memory、rules、skills 的职责边界，并禁止 AI 在普通任务中自动生成或沉淀参考资料。
+- 新增长期 `PLANS.md`，建立人工批准的 Roadmap、即时 exec plan、ready batch、隔离 worktree、任务级验证与集成级验证流程。
+- 增加跨平台的 subagent 模型/推理抽象档位、最低充分选档、全新 Agent 逐级升级和 `platform-default` 降级策略。
+- 扩展技术债跟踪，规定 AI 只记录证据候选，是否接受、排序或提升由人工决定。
+
 ## 0.4.1 - 2026-08-12
 
 - 将 `AGENTS.md`、`rules.md`、`memory.md`、项目 Skill 说明、执行计划文档和变更日志统一改为中文。
