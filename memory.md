@@ -20,6 +20,7 @@
 - `references/` 是仅由用户主动要求生成或维护的项目知识库，不执行自动沉淀。
 - `PLANS.md` 是长期 Roadmap；详细 exec plan 只在任务进入 ready batch 时创建。
 - subagent 使用跨平台的 `low`、`medium`、`high` 模型与推理抽象档位，不记录固定模型名称。
+- 每个任务在 exec plan 中保存冻结验证合同；Validator 可以使用新检查方法，但阻塞发现必须绑定已有合同标准，超范围发现不得改变交付判定。
 
 ## 已建立的验证命令
 

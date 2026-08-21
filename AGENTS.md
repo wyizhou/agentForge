@@ -111,7 +111,8 @@
 - 档位表示当前平台可用能力的相对排名。具体模型和参数只由运行时适配，不写入仓库文档。
 - 每次派发在 exec plan 中记录 Agent 角色、任务 ID、目标、验收标准、风险、模型/推理档位、选档理由、写入边界、lint/test 门、返回产物、验证要求和平台支持情况。
 - 能力不足时使用全新 Agent，按 `low/low → low/medium → low/high → medium/medium → medium/high → high/high` 逐级升级；从当前档位之后继续，不得降低已选维度。
-- 触发升级的事实包括无法完成、证据不足、边界遗漏、自相矛盾、无法定位的检查失败，或与能力不足有关的 `FAIL`/`INCONCLUSIVE`。
+- 只有能力不足导致的无法完成、证据不足、自相矛盾或无法定位的检查失败，才触发模型/推理档位升级。
+- 验收合同缺失、含糊、范围争议、未绑定标准的阻塞发现或超范围攻击假设，不属于能力不足。此类情况不得通过升级档位解决，必须按冻结验证合同返回 `INCONCLUSIVE`、非阻塞建议或请求人工决定。
 - 达到 `high/high` 仍失败时停止自动重试，将任务标记为 `blocked`，由主协调 Agent重新拆分或请求用户决策；不得接受部分结果释放后续依赖。
 - 平台无法显式选择某个维度时使用平台默认值，并记录为 `platform-default`；通过缩小任务、明确验收、完整 lint/test 和独立验证补偿，不得猜测实际模型档位。
 - 平台无法提供全新独立 Validator 时，计划保持 `validating`，主协调 Agent不得自我认证完成。
@@ -149,6 +150,20 @@ tests/<feature-slug>/
 
 禁止为了获得绿灯而删除测试、移除关键用例、降低断言精度、改变正确预期、过度 mock 真实行为、增加无正当理由的 skip，或隐藏 test/linter 失败。只有目标或验收标准被明确修改后，才可以变更测试预期，并在计划中记录授权依据和理由。代码必须满足正确测试，而不是反过来修改测试迎合错误代码。
 
+## 冻结验证合同
+
+`AGENTS.md` 规定所有任务共同遵守的验证纪律；每个 exec plan 的“冻结验证合同”记录该任务具体要验证什么。不得建立另一套独立合同目录或把任务合同移出 exec plan。
+
+- 用户明确提出任务或批准执行计划时，同时批准并冻结初始合同 `VC-001`，无需额外请求一次确认。Worker 开始修改仓库前，合同状态必须为 `frozen`。
+- 合同状态使用 `draft`、`frozen` 和 `superseded`。合同至少包含冻结依据、验收标准 `AC-*`、行为不变量 `INV-*`、威胁模型 `TM-*`、明确排除项 `EX-*`、lint/test 门禁 `GATE-*` 和修订记录。
+- Validator 可以设计合同未列出的测试、输入和检查方法，但只能验证已冻结的合同、已批准规则和对应仓库结果。新检查方法不等于新验收要求。
+- `FAIL` 的每个阻塞发现必须绑定一个适用的 `AC-*`、`INV-*`、`TM-*`、`RULE-*` 或 `GATE-*`，并提供可复核证据。精确测试用例未预先列出不影响其有效性，只要它确实验证已有标准或不变量。
+- 命中 `EX-*`、超出冻结范围或提出新质量要求的发现只能进入 `ADVISORY` 或 `SCOPE_CHANGE_CANDIDATE`，不得改变总体判定、触发实现修改或启动新的验证循环。
+- 标准缺失、含糊、相互矛盾、证据不足或无法判断某发现是否属于冻结范围时，Validator 必须返回 `INCONCLUSIVE`，不得自行采用更严格解释。
+- 含有未绑定标准 ID 的阻塞发现属于无效报告。主协调 Agent 将其记录为 `INCONCLUSIVE` 并保持 `validating`，不得自行改判为 `PASS`，也不得据此修改代码、测试、规则或合同。
+- 合同冻结后不得静默修改。只有人工明确批准后，主协调 Agent 才能升级为 `VC-002` 等新版本，记录变更内容、理由和批准依据，并保留旧修订历史；新版本生效后，基于旧合同的验证结果失效。
+- 同一合同下的重验证必须逐字使用同一冻结合同版本，不向新 Validator 提供前一 Validator 的推理、结论或新增假设。合同争议不触发档位升级，必须暂停并请求人工决定。
+
 ## 独立 Validator
 
 任何修改代码、配置、功能文档或其他仓库结果的任务，在完成前都必须通过独立验证。并行任务使用任务级和集成级两层验证。
@@ -156,10 +171,13 @@ tests/<feature-slug>/
 - Worker 完成后将任务设为 `validating`，由任务级 Validator 检查其独立交付；`PASS` 后只进入 `validated`。
 - 主协调 Agent将同批 validated 结果集成到阶段集成分支，再由另一个全新 Validator 运行整体 lint、完整测试和跨任务回归；只有该 Validator `PASS` 才能完成和回写 Roadmap。
 - 使用未参与实施的全新、只读 Agent。
-- 只向 Validator 提供中性的目标、验收标准、本文件的适用条款、已批准规则和当前仓库结果。
-- 不得提供实施者的推理、辩护、预期结论、计划日志、memory 偏好、声称的结果或缺陷导向提示。
+- 只向 Validator 逐字提供当前 exec plan 的冻结验证合同、本文件的适用条款、已批准规则和当前仓库结果。不得提供 exec plan 的其他章节。
+- 不得提供实施者的推理、辩护、预期结论、计划日志、memory 偏好、声称的结果、历史 Validator 输出或缺陷导向提示。
 - Validator 独立检查 Git 变更范围、工具配置、lint 结果、功能测试结构与真实性、是否存在禁止的测试弱化、定向测试、全部适用测试、验收标准和已批准规则。
-- Validator 返回 `PASS`、`FAIL` 或 `INCONCLUSIVE`，并附上命令、观察结果、证据、未满足项和剩余风险；Validator 不得修改文件。
+- Validator 返回 `PASS`、`FAIL` 或 `INCONCLUSIVE`，固定包含 `contract_version`、`overall_verdict`、`criterion_results`、`blocking_findings`、`advisories`、`scope_change_candidates`、`unknowns` 和 `commands_and_evidence`；Validator 不得修改文件。
+- 只有适用的冻结标准和门禁全部通过，且不存在有效阻塞发现时才能返回 `PASS`。`ADVISORY` 和 `SCOPE_CHANGE_CANDIDATE` 可以随 `PASS` 返回，但不影响判定。
+- 只有至少一个绑定冻结标准或已批准规则的阻塞发现时才能返回 `FAIL`。每个阻塞发现必须说明标准 ID、复现方式、实际结果和证据。
+- 无法运行必要检查、证据不足、合同含糊或报告无法满足固定结构时返回 `INCONCLUSIVE`。
 - 返回 `FAIL` 后，由主 Agent 修复并交给新的独立 Validator。结果为 `INCONCLUSIVE` 或 Validator 不可用时，计划保持 `validating`，主 Agent 的自检不能替代独立验证。
 - Validator 的模型档位不得低于对应 Worker，推理档位至少为 `medium`；高风险验证使用 `high/high`。
 - 只有适用层级的全部 `PASS` 才允许主 Agent 将计划标记并移动到 `completed/`。

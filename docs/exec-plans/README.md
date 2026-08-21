@@ -29,6 +29,17 @@ active|blocked|validating|validated|integrating → cancelled
 
 任务级 Validator `PASS` 只进入 `validated`。并行结果集成后，集成级 Validator `PASS` 才能完成、归档并勾选 `PLANS.md`。
 
+## 冻结验证合同
+
+全局验证纪律由 `AGENTS.md` 定义；每个任务具体的验收范围保存在自身 exec plan 的“冻结验证合同”中，不建立独立合同文件。
+
+- 用户明确提出任务或批准计划时，同时冻结初始版本 `VC-001`，Worker 开始修改前合同必须为 `frozen`。
+- 合同使用 `AC-*` 验收标准、`INV-*` 行为不变量、`TM-*` 威胁模型、`EX-*` 明确排除项和 `GATE-*` lint/test 门禁，并记录冻结依据和修订历史。
+- Validator 可以用新方法验证已有标准，但不得增加验收要求。阻塞发现必须绑定 `AC-*`、`INV-*`、`TM-*`、`RULE-*` 或 `GATE-*`。
+- `EX-*` 或超范围发现只进入 `ADVISORY`/`SCOPE_CHANGE_CANDIDATE`；合同含糊或阻塞发现未绑定标准时保持 `INCONCLUSIVE`/`validating`。
+- 冻结后只有人工明确批准才能升级合同版本。新版本必须记录变更和批准依据，旧版本验证随即失效。
+- 重验证逐字沿用同一合同版本，且不接收历史 Validator 输出。合同争议不触发模型升级或自动实现修改。
+
 ## 并行与写入隔离
 
 - 计划记录 Roadmap ID、Batch ID、显式依赖、分支、worktree、集成分支、写入范围和禁止范围。
@@ -41,7 +52,7 @@ active|blocked|validating|validated|integrating → cancelled
 - 每个 subagent 派发记录抽象模型档位和推理档位：`low`、`medium`、`high`；不得写入具体模型名称。
 - 记录选档依据、平台支持情况、输入、权限、预期产物和 lint/test 门。
 - 平台无法控制某个维度时记录 `platform-default`。
-- 能力不足时使用全新 Agent，并按规定阶梯升级；每次 attempt 记录触发证据和结果。
+- 只有能力不足时才使用全新 Agent 按规定阶梯升级；合同缺失、含糊、范围争议或超范围发现交由合同裁决和人工决定，不得借升级扩大要求。
 - `high/high` 仍无法满足合同后停止自动重试并标记 `blocked`。
 
 ## 检查点与回写
@@ -54,6 +65,8 @@ active|blocked|validating|validated|integrating → cancelled
 
 ## 验证证据
 
-- Validator 必须是全新、只读且未参与实施的 Agent，只接收中性目标、验收标准、适用规则和当前结果。
-- 计划分别保存任务级和集成级 Validator 的档位、命令、观察、`PASS`/`FAIL`/`INCONCLUSIVE`、未满足项和风险。
+- Validator 必须是全新、只读且未参与实施的 Agent，只接收逐字冻结合同、适用规则和当前结果。
+- Validator 固定返回 `contract_version`、`overall_verdict`、`criterion_results`、`blocking_findings`、`advisories`、`scope_change_candidates`、`unknowns` 和 `commands_and_evidence`。
+- 计划分别保存任务级和集成级 Validator 的档位、合同版本、逐项结果、命令、证据、`PASS`/`FAIL`/`INCONCLUSIVE` 和剩余风险。
+- 未绑定冻结标准的阻塞发现使报告无效并按 `INCONCLUSIVE` 处理，不得触发代码、测试、规则或合同修改。
 - Validator 不可用或结果为 `INCONCLUSIVE` 时不得完成计划。
