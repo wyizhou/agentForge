@@ -21,7 +21,7 @@
 ```text
 planned → ready → active → validating → validated → integrating → completed
                     ↕           │                         │
-                  blocked       └── FAIL → active         └── FAIL → active
+                  blocked       └── FAIL → 记录与诊断门   └── FAIL → 记录与诊断门
 
 completed → rework → active
 active|blocked|validating|validated|integrating → cancelled
@@ -40,6 +40,61 @@ active|blocked|validating|validated|integrating → cancelled
 - 冻结后只有人工明确批准才能升级合同版本。新版本必须记录变更和批准依据，旧版本验证随即失效。
 - 重验证逐字沿用同一合同版本，且不接收历史 Validator 输出。合同争议不触发模型升级或自动实现修改。
 
+## 失败诊断门
+
+有效失败不能无条件进入下一轮修复。计划按“任务 + 合同版本 + 失败特征”记录每次修法和验证结果；失败特征由关联标准和可观察的不符合结果组成。
+
+| Validator 结论 | 判断条件 | 主协调 Agent处理 |
+| --- | --- | --- |
+| `PASS` | 全部适用标准和门禁通过，且没有有效阻塞发现 | 进入集成、归档、发布或下一任务。 |
+| `FAIL` | 当前输出明确违反至少一项已有标准，且阻塞发现已经绑定标准并提供可复核证据 | 记录失败特征；未达到诊断条件时修复明确的实施错误，达到条件时先启动 Failure Analyst。 |
+| `INCONCLUSIVE` | 证据不足、检查无法运行、合同含糊或冲突，或报告协议无效，当前无法可靠判断 | 禁止直接修改实现；补足证据、等待环境变化或请求人工澄清。直接发现合同冲突时立即启动 Failure Analyst。 |
+
+```mermaid
+flowchart TD
+    A["主 Agent<br/>冻结合同并派发开发"] --> B["开发 Subagents<br/>实现与测试"]
+    B --> C["全新独立 Validator<br/>合同 + 规则 + 当前输出"]
+    C -->|PASS| D["主 Agent<br/>进入下一步"]
+    C -->|INCONCLUSIVE| E{"无法判断的原因"}
+    E -->|证据不足| F["补足可验证证据"]
+    E -->|环境不可用| G["等待外部状态变化"]
+    E -->|标准直接冲突| H["blocked<br/>启动 Failure Analyst"]
+    F --> C
+    G --> C
+    C -->|FAIL| I{"达到诊断条件？"}
+    I -->|否| J["明确实施错误<br/>原合同与范围内修复"]
+    J --> C
+    I -->|两种修法仍失败| H
+    I -->|三轮无收敛| H
+    I -->|直接冲突| H
+    H --> K{"Failure Analyst 归因"}
+    K -->|IMPLEMENTATION_DEFECT| L["允许一次针对性修复"]
+    L --> C
+    K -->|PLAN_CONTRACT_CONFLICT| M["保持 blocked<br/>用户批准后升级合同"]
+    K -->|VALIDATION_DEFECT| N["不改实现<br/>更换全新 Validator"]
+    N --> C
+    K -->|ENVIRONMENT_FAILURE| O["外部状态变化后重试"]
+    K -->|UNDETERMINED| P["保持 blocked<br/>请求人工决定"]
+```
+
+出现以下任一情况时，将任务设为 `blocked`、`blocker_type` 设为 `DIAGNOSIS_PENDING`：
+
+- 同一失败特征采用两种实质不同修法仍失败；
+- 连续三轮修改和验证没有消除该特征、没有持续减少有效阻塞项，或在同一组标准间往返；
+- 直接发现冻结目标、标准、依赖或范围无法同时满足。
+
+全新、只读、未参与实施的 `high/high` Failure Analyst 可以读取相关失败历史，固定归因为 `IMPLEMENTATION_DEFECT`、`PLAN_CONTRACT_CONFLICT`、`VALIDATION_DEFECT`、`ENVIRONMENT_FAILURE` 或 `UNDETERMINED`。它只负责找原因，不得修改文件、改变合同、替代 Validator 或裁决 `PASS`。
+
+- 可安全修复的实施缺陷只允许一次诊断后修复；相同特征继续失败则停止并请求人工决定。
+- 规划或合同冲突必须给出最小冲突集合和处理选项，只有人工批准才能升级合同。
+- 验证缺陷使用同一合同交给全新 Validator，不修改实现。
+- 环境故障只有确认外部状态变化后才允许一次重试。
+- 无法确定时保持 `blocked`，不得猜测或降低标准。
+
+Failure Analyst 与 Validator 严格隔离：前者为了归因可以接收尝试历史；后者为了独立裁决仍只能接收冻结合同、适用规则和当前结果。
+
+主协调 Agent根据 exec plan 中的失败记录判断是否达到诊断条件，Validator 不负责决定是否升级为 Failure Analyst。仓库中已经持久化的历史 Validator 记录可以作为当前变更内容接受格式和风险检查，但其历史 verdict 不得成为新 Validator 的裁决证据。
+
 ## 并行与写入隔离
 
 - 计划记录 Roadmap ID、Batch ID、显式依赖、分支、worktree、集成分支、写入范围和禁止范围。
@@ -54,10 +109,12 @@ active|blocked|validating|validated|integrating → cancelled
 - 平台无法控制某个维度时记录 `platform-default`。
 - 只有能力不足时才使用全新 Agent 按规定阶梯升级；合同缺失、含糊、范围争议或超范围发现交由合同裁决和人工决定，不得借升级扩大要求。
 - `high/high` 仍无法满足合同后停止自动重试并标记 `blocked`。
+- Failure Analyst 固定使用 `high/high`，因为其结果可能停止实施或触发人工合同裁决；它不参与能力升级链。
 
 ## 检查点与回写
 
 - 同一计划最多一个步骤为 `in_progress`。
+- 检查点记录 `blocker_type` 和诊断状态；诊断状态使用 `not_triggered`、`pending`、`in_progress` 或 `completed`。
 - 完成关键步骤、出现阻塞、准备交接以及上下文结束前更新当前检查点。
 - 每个上下文追加一条简短迭代日志，不保存完整对话。
 - 恢复时以 Git 和文件系统证据核对检查点；仓库事实优先，并记录偏差。

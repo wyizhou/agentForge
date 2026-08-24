@@ -104,6 +104,7 @@
 | 检索、提取、格式转换、机械检查 | `low` | `low` |
 | 单模块实现、常规测试、一般文档 | `medium` | `medium` |
 | 跨模块设计、复杂调试、迁移、并发、安全 | `high` | `high` |
+| Failure Analyst | `high` | `high` |
 | 任务 Validator | 不低于对应 Worker | 至少 `medium` |
 | 集成 Validator | 不低于该批次最高 Worker | 至少 `medium` |
 | 高风险 Validator | `high` | `high` |
@@ -164,6 +165,53 @@ tests/<feature-slug>/
 - 合同冻结后不得静默修改。只有人工明确批准后，主协调 Agent 才能升级为 `VC-002` 等新版本，记录变更内容、理由和批准依据，并保留旧修订历史；新版本生效后，基于旧合同的验证结果失效。
 - 同一合同下的重验证必须逐字使用同一冻结合同版本，不向新 Validator 提供前一 Validator 的推理、结论或新增假设。合同争议不触发档位升级，必须暂停并请求人工决定。
 
+## 实施失败归因与诊断门
+
+Validator 的职责是判断当前结果是否满足冻结合同；当实施反复失败时，必须通过独立的失败诊断门判断问题来自实现、规划、验证还是环境。不得仅凭失败次数认定规划错误，也不得把所有 `FAIL` 都当成代码缺陷持续修复。
+
+Validator 结论与主协调 Agent的处理固定如下：
+
+| Validator 结论 | 成立条件 | 主协调 Agent处理 |
+| --- | --- | --- |
+| `PASS` | 全部适用标准和门禁通过，且不存在有效阻塞发现 | 进入集成、归档、发布或下一任务。 |
+| `FAIL` | 至少一个阻塞发现绑定现有 `AC-*`、`INV-*`、`TM-*`、`RULE-*` 或 `GATE-*`，标准明确且证据可复核 | 记录失败特征；未达到诊断条件的明确实施错误可以修复，达到条件后必须先归因。 |
+| `INCONCLUSIVE` | 标准缺失、含糊或冲突，证据不足，必要检查无法运行，或报告不满足固定协议 | 不得据此修改代码、测试或合同；先补足证据、等待环境变化或请求人工澄清。只有直接暴露合同冲突时才立即触发诊断。 |
+
+`INCONCLUSIVE` 不是较轻或较重的 `FAIL`，而是“当前无法可靠判断”。普通一次 `INCONCLUSIVE` 不计入“两种修法”或“三轮无收敛”的实施失败次数。
+
+失败归因只使用以下结果：
+
+- `IMPLEMENTATION_DEFECT`：实现代码、配置或交付测试没有正确满足冻结合同。
+- `PLAN_CONTRACT_CONFLICT`：目标、验收标准、不变量、依赖或批准范围相互冲突，无法同时满足。
+- `VALIDATION_DEFECT`：Validator 报告、临时检查方法或验证执行越界、错误或未绑定有效标准；仓库内测试与冻结合同不符时仍属于实现交付缺陷，不得借本类别随意改测试。
+- `ENVIRONMENT_FAILURE`：网络、权限、外部服务、工具或其他仓库外状态阻止实施或验证。
+- `UNDETERMINED`：现有证据无法可靠区分上述原因。
+
+每个有效失败必须在 exec plan 中记录失败特征。失败特征由任务 ID、合同版本、关联标准 ID 和可观察的不符合结果组成，不使用易变的日志全文作为身份。修复次数和验证轮次按“任务 + 合同版本 + 失败特征”累计；只有该失败特征已经消除或人工批准了新合同版本时才重置。
+
+出现以下任一情况时必须停止继续修改，将任务设为 `blocked`、`blocker_type` 设为 `DIAGNOSIS_PENDING`，并启动失败诊断：
+
+1. 同一失败特征已经采用两种实质不同的修法仍然存在；实质不同必须体现不同根因假设或行为路径，格式整理、改名和重复同一补丁不单独计数。
+2. 同一失败特征连续经历三轮“修改 → Validator”仍未消除，且有效阻塞项没有持续减少，或修复在同一组标准之间反复往返。
+3. 任意时刻发现两个或多个冻结目标、标准、依赖或批准边界无法同时满足。
+
+诊断由全新、只读、未参与实施的 `high/high` Failure Analyst 执行：
+
+- Failure Analyst 可以接收逐字冻结合同、适用规则、当前仓库结果、相关实施尝试和历史失败证据。这是为了归因，不得把这些历史材料转交给后续 Validator。
+- Failure Analyst 不得修改文件、改变任务目标、修改合同或测试、替代 Validator，且不得返回或宣称 `PASS`。
+- 固定输出 `failure_id`、`failure_class`、`criterion_ids`、`failure_signature`、`trigger`、`attempts_compared`、`evidence`、`minimal_conflict_set`、`contract_change_required`、`safe_auto_fix`、`recommended_actions` 和 `confidence`。
+- 证据不足、类别无法可靠确定或建议需要扩大范围时，必须返回 `UNDETERMINED`；不得以提高模型档位代替人工判断。
+
+主协调 Agent依据归因结果处理：
+
+- `IMPLEMENTATION_DEFECT`：只有 `safe_auto_fix=true`，且修复不改变冻结合同、正确测试预期、批准范围、接口或未经批准的依赖时，才允许一次有证据的针对性修复。相同失败特征仍存在时改为 `UNDETERMINED` 并请求人工决定，不得重新开始无限循环。
+- `PLAN_CONTRACT_CONFLICT`：保持 `blocked`，列出标准 ID、最小冲突集合、证据以及互斥处理方案和影响。人工明确批准后才能修改目标、Roadmap 或合同并升级为 `VC-002`；旧验证结果随之失效。
+- `VALIDATION_DEFECT`：不修改实现或合同，使用同一合同交给全新的独立 Validator。相同验证缺陷再次出现时改为 `UNDETERMINED` 并请求人工决定。
+- `ENVIRONMENT_FAILURE`：记录外部证据并保持 `blocked`。只有确认相关外部状态发生变化后才允许一次重试；不得用重复重试制造虚假进展。
+- `UNDETERMINED`：保持 `blocked`，报告未知项并请求人工决定，不得猜测、弱化测试或降低验收标准。
+
+Failure Analyst 完成后在 exec plan 中记录完整固定输出、`blocker_type` 和诊断状态。只有归因为可安全自动修复的实现缺陷或验证缺陷并按上述规则处理时，任务才可恢复为 `active` 或 `validating`；其他结果保持 `blocked`。
+
 ## 独立 Validator
 
 任何修改代码、配置、功能文档或其他仓库结果的任务，在完成前都必须通过独立验证。并行任务使用任务级和集成级两层验证。
@@ -173,12 +221,13 @@ tests/<feature-slug>/
 - 使用未参与实施的全新、只读 Agent。
 - 只向 Validator 逐字提供当前 exec plan 的冻结验证合同、本文件的适用条款、已批准规则和当前仓库结果。不得提供 exec plan 的其他章节。
 - 不得提供实施者的推理、辩护、预期结论、计划日志、memory 偏好、声称的结果、历史 Validator 输出或缺陷导向提示。
+- 历史 Validator 记录如果已经作为仓库文件的一部分持久化，当前 Validator 可以检查该文件是否属于当前变更范围、格式是否正确或是否引入风险，但不得把其中的历史 verdict、推理或声称结果作为当前任务通过或失败的证据。
 - Validator 独立检查 Git 变更范围、工具配置、lint 结果、功能测试结构与真实性、是否存在禁止的测试弱化、定向测试、全部适用测试、验收标准和已批准规则。
 - Validator 返回 `PASS`、`FAIL` 或 `INCONCLUSIVE`，固定包含 `contract_version`、`overall_verdict`、`criterion_results`、`blocking_findings`、`advisories`、`scope_change_candidates`、`unknowns` 和 `commands_and_evidence`；Validator 不得修改文件。
 - 只有适用的冻结标准和门禁全部通过，且不存在有效阻塞发现时才能返回 `PASS`。`ADVISORY` 和 `SCOPE_CHANGE_CANDIDATE` 可以随 `PASS` 返回，但不影响判定。
 - 只有至少一个绑定冻结标准或已批准规则的阻塞发现时才能返回 `FAIL`。每个阻塞发现必须说明标准 ID、复现方式、实际结果和证据。
 - 无法运行必要检查、证据不足、合同含糊或报告无法满足固定结构时返回 `INCONCLUSIVE`。
-- 返回 `FAIL` 后，由主 Agent 修复并交给新的独立 Validator。结果为 `INCONCLUSIVE` 或 Validator 不可用时，计划保持 `validating`，主 Agent 的自检不能替代独立验证。
+- 返回有效 `FAIL` 后，主 Agent先记录失败特征，并仅在未触发诊断门且证据明确指向范围内实现缺陷时修复，再交给新的独立 Validator。达到诊断条件时必须先执行失败归因。结果为 `INCONCLUSIVE` 或 Validator 不可用时，计划保持 `validating`，主 Agent 的自检不能替代独立验证。
 - Validator 的模型档位不得低于对应 Worker，推理档位至少为 `medium`；高风险验证使用 `high/high`。
 - 只有适用层级的全部 `PASS` 才允许主 Agent 将计划标记并移动到 `completed/`。
 
