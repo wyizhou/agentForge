@@ -26,10 +26,12 @@
 - `AGENTS.md` 是核心入口，详细执行协议集中于 `docs/exec-plans/README.md`；串行与实际并行按适用层级完成验证，阻塞按有证据的恢复条件解除。
 - 验收标准必须有批准来源；验证绑定合同和受审文件快照，语义变化需重新验证，真实协调回写不递归重验。角色启动按需读取，Validator 不加载 memory 或协调历史。
 
+上述治理精简机制已于 2026-09-05 通过独立静态验证，证据见[ADHOC-0011 归档计划](docs/exec-plans/completed/ADHOC-0011-governance-simplification.md)。这是文档机制的验证记录，不代表对未来项目运行结果的保证。
+
 ## 已建立的验证命令
 
 当前没有 lint 或 test 命令；静态模板不包含可执行代码。
 
 ## 活动计划链接
 
-- [ADHOC-0011：治理精简与一致性修复](docs/exec-plans/active/ADHOC-0011-governance-simplification.md)
+当前没有活动计划。
