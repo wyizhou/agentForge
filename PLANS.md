@@ -19,7 +19,7 @@
 - 叶子任务使用阶段内全局递增 ID，例如 `P1-0001`。编号只表示排序和优先级，不表示依赖。
 - 依赖必须通过任务表中的“显式依赖”列声明。
 - 任务状态使用 `planned`、`ready`、`active`、`blocked`、`validating`、`validated`、`integrating`、`completed`、`rework` 或 `cancelled`。
-- 只有通过任务级和集成级验证的任务才可标为 `[x] completed`。其他状态一律保持 `[ ]`。
+- 正式任务只有通过适用层级验证并完成获批交付后才可标为 `[x] completed`：串行需要任务级独立 PASS；实际并行需要任务级及集成级 PASS。只读检查点任务依据实际检查证据完成。其他状态保持 `[ ]`，完整条件见[执行协议](docs/exec-plans/README.md#生命周期与归档)。
 - 子项目或阶段只有在批准范围内全部非取消叶子任务均为 `completed` 后才能勾选。
 - 任务启动后链接 `docs/exec-plans/active/` 中的计划；完成后将链接更新到 `completed/`。
 
